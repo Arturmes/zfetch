@@ -8,8 +8,14 @@ Currently it shows this information:
 - Your username and your machine name.
 - Your OS.
 - Your kernel.
+- Your CPU
+- Your motherboard
+- Your system init
 - Machine uptime.
 - Terminal Shell.
+- OS package manager (if know)
+- Virtual term
+- Disk model
 - 7 colored dots to identify terminal colors.
 ## Installation 🔧
 ### Arch Linux
