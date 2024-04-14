@@ -143,7 +143,7 @@ fi
 
 # disk model
 if [ -f /sys/block/sda/device/model ]; then
-	export diskc="$(cat /sys/block/sdb/device/model)"
+	export diskc="$(cat /sys/block/sda/device/model)"
 else
 	export diskc=$(echo Unknown)
 fi
