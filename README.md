@@ -18,18 +18,8 @@ Currently it shows this information:
 - Disk model
 - 7 colored dots to identify terminal colors.
 ## Installation 🔧
-### Arch Linux
-Arch users may install it from the AUR.
-Remember to read the PKGBUILD!
 ```
-git clone https://aur.archlinux.org/zfetch.git
-cd zfetch
-cat PKGBUILD
-makepkg -si
-```
-### Other distros
-```
-git clone https://github.com/jornmann/zfetch.git
+git clone https://github.com/Arturmes/zfetch.git
 cd zfetch
 make install
 ```
