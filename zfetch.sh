@@ -24,9 +24,14 @@
 # ourselves
 unset NAME
 if [ "$NAME" = "" ]; then
-	. /etc/os-release 2>/dev/null || export NAME="Unknown"
+	if [ -f /etc/os-release ]; then
+		. /etc/os-release
+			elif [ -f /system/bin/getprop ]; then
+				export NAME="Android $(getprop ro.build.version.release)"
+	fi
+else
+	export NAME=Unknown
 fi
-
 # nc = no color
 nc="\033[0m"
 
@@ -94,6 +99,16 @@ elif echo $NAME | grep -q 'Mint'; then
 	dslogo5="         "
 	dslogo6="         "
 	dslogo7=$dslogo6
+elif echo $NAME | grep -q 'Android'; then
+	dscolor="\033[0;32m"
+	dslogo1="                 _           _     _    "
+	dslogo2="                | |         (_)   | |   "
+	dslogo3="  __ _ _ __   __| |_ __ ___  _  __| |   "
+	dslogo4=" / _/ | '_ \ / _. | '__/ _ \| |/ _. |   "
+	dslogo5="| (_| | | | | (_| | | | (_) | | (_| |   "
+	dslogo6=" \__,_|_| |_|\__,_|_|  \___/|_|\__,_|   "
+	dslogo7="                                        "
+
 else
 	dscolor="\033[0;37m" # white
 	dslogo1="         "
@@ -105,98 +120,75 @@ else
 	dslogo7=$dslogo6
 fi
 
-
-# source the config file
-if [ "$colorsoff" = "" ]; then
-	colorsoff=0
-fi
-
-[ -e /etc/zfetchrc ] && . /etc/zfetchrc 2> /dev/null
-[ -e ~/.zfetchrc ] && . ~/.zfetchrc 2> /dev/null
-
-# command line parameters
-# if [ "$arg" = "" ]; then
-# 	arg=""
-# elif [ "$arg" = "nologo" ]; then
-# 	unset dslogo
-# elif [ "$arg" = "nofetch" ]; then
-# 	printf "${dscolor}${dslogo1}\n${dslogo2}\n${dslogo3}\n${dslogo4}\n${dslogo5}\n${dslogo6}\n${nc}"
-# 	exit
-# fi
-
 # package manager
 if [ -f /usr/bin/ebuild ]; then
-	export pm=$(echo "$(ls /var/db/pkg/*/*/BUILD_TIME 2>/dev/null | wc -l) (portage)")
+	export pm="$(ls /var/db/pkg/*/*/BUILD_TIME 2>/dev/null | wc -l) (portage)"
 elif [ -f /bin/pacman ]; then
-	export pm=$(echo "$(pacman -Qq 2>/dev/null | wc -l) (pacman)")
+	export pm="$(pacman -Qq 2>/dev/null | wc -l) (pacman)"
 elif [ -f /bin/rpm ]; then
-	export pm=$(echo "$(rpm -qa 2>/dev/null | wc -l) (rpm)")
+	export pm="$(rpm -qa 2>/dev/null | wc -l) (rpm)"
 elif [ -f /bin/dpkg ]; then
-	export pm=$(echo "$(apt list --installed 2>/dev/null | wc -l) (dpkg)")
+	export pm="$(apt list --installed 2>/dev/null | wc -l) (dpkg)"
+elif echo $NAME | grep -q 'Android'; then
+	export pm="$(pm list packages -f 2>/dev/null | wc -l) (apk)"
 else
-	export pm=$(echo Unknown)
+	export pm=Unknown
 fi
 
 # disk model
 if [ -f /sys/block/sda/device/model ]; then
 	export diskc="$(cat /sys/block/sda/device/model)"
-elif [ -e /sys/block/mmcblk0/device/name ]; then
+elif [ -f /sys/block/mmcblk0/device/name ]; then
 	export diskc="$(cat /sys/block/mmcblk0/device/name)"
 else
-	export diskc=$(echo Unknown)
+	export diskc=Unknown
 fi
 
 # motherboard name
 if [ -f /sys/class/dmi/id/product_name ]; then
 	export hostv="$(cat /sys/class/dmi/id/product_name)"
-		if [ "$hostv" == "Default string" ]; then
-			export hostv=$(echo Unknown)
-		fi
+elif echo $NAME | grep -q 'Android'; then
+	export hostv=$(getprop ro.product.model)
 else
-	export hostv=$(echo Unknown)
+	export hostv=Unknown
 fi
 
 if [ -f /sys/class/dmi/id/board_name ]; then
 	export hostp=$(cat /sys/class/dmi/id/board_name)
-else
-	export hostp=$(echo Unknown)
-fi
-
-# cpu arch
-arch=$(uname -m)
-if [ "$arch" == x86_64 ]; then
-	export arch=$(echo)
 fi
 
 # initd
 if [ -f /sbin/init ]; then
 	export init="$(realpath /sbin/init | sed "s/\/bin\///" | sed "s/\/sbin\///" | sed "s/\/usr//" | sed "s/\/lib//" | sed "s/\-init//" | sed "s/\/systemd//")"
+elif echo $NAME | grep -q 'Android'; then
+	export init=init.rc
 else
-	export init=$(echo Unknown)
+	export init=Unknown
+fi
+
+if echo $NAME | grep -q 'Android'; then
+	export cpu="$(grep "Hardware" /proc/cpuinfo | head -n1 | sed "s/\Hardware	://" | sed "s/\ //")"
+else
+	cpu="$(grep "model name" /proc/cpuinfo | head -n1 | sed "s/\model name	://" | sed "s/\ //" | sed "s/\ CPU//")"
 fi
 
 # the meat and potatoes, actual fetch
-host=$(cat /proc/sys/kernel/hostname)
-kernel=$(sed "s/version // ; s/ (.*//" /proc/version)
+host="$(hostname 2>/dev/null || cat /proc/sys/kernel/hostname 2>/dev/null)"
+kernel=$(uname -srm)
 uptime=$(uptime -p | sed "s/up //")
-shell="$(printf "$SHELL" | sed "s/\/bin\///" | sed "s/\/usr//")"
-session=$XDG_SESSION_TYPE
+shell="$(echo "$SHELL" | sed "s/\/bin\///" | sed "s/\/usr//" | sed "s/\/system//")"
 terma="$(tty | sed "s/\/dev//" | sed "s/\///" | sed "s/\///")"
-cpu="$(grep "model name" /proc/cpuinfo | head -n1 | sed "s/\model name	://" | sed "s/\ //" | sed "s/\ CPU//")"
 
 printf "${dscolor}${dslogo7}$USER@$host\n"
 printf "${dscolor}${dslogo7}OS      ${nc} $NAME\n"
-printf "${dscolor}${dslogo7}Kernel  ${nc} $kernel $arch\n"
-printf "${dscolor}${dslogo1}Cpu     ${nc} $cpu\n"
-printf "${dscolor}${dslogo2}Host    ${nc} $hostv $hostp\n"
-printf "${dscolor}${dslogo3}Init    ${nc} $init\n"
-printf "${dscolor}${dslogo4}Uptime  ${nc} $uptime\n"
-printf "${dscolor}${dslogo5}Shell   ${nc} $shell\n"
-printf "${dscolor}${dslogo6}Session ${nc} $session\n"
+printf "${dscolor}${dslogo1}Kernel  ${nc} $kernel\n"
+printf "${dscolor}${dslogo2}Cpu     ${nc} $cpu\n"
+printf "${dscolor}${dslogo3}Host    ${nc} $hostv $hostp\n"
+printf "${dscolor}${dslogo4}Init    ${nc} $init\n"
+printf "${dscolor}${dslogo5}Uptime  ${nc} $uptime\n"
+printf "${dscolor}${dslogo6}Shell   ${nc} $shell\n"
 printf "${dscolor}${dslogo7}Pkgs    ${nc} $pm\n"
 printf "${dscolor}${dslogo7}Term    ${nc} $terma\n"
 printf "${dscolor}${dslogo7}Disk    ${nc} $diskc\n"
 
-if [ "$colorsoff" != 1 ]; then
-	printf "${dslogo7}\033[0;31m● \033[0;32m● \033[0;33m● \033[0;34m● \033[0;35m● \033[0;36m● \033[0;37m●\033[0m\n"
-fi
+printf "${dslogo7}\033[0;31m● \033[0;32m● \033[0;33m● \033[0;34m● \033[0;35m● \033[0;36m● \033[0;37m●\033[0m\n"
