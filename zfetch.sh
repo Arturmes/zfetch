@@ -125,45 +125,47 @@ fi
 # fi
 
 # package manager
-if echo $NAME | grep -q 'Gentoo'; then
+if [ -f /usr/bin/ebuild ]; then
 	export pm=$(echo "$(ls /var/db/pkg/*/*/BUILD_TIME 2>/dev/null | wc -l) (portage)")
-elif echo $NAME | grep -q 'Arch'; then
+elif [ -f /bin/pacman ]; then
 	export pm=$(echo "$(pacman -Qq 2>/dev/null | wc -l) (pacman)")
-elif echo $NAME | grep -q 'Artix'; then
-	export pm=$(echo "$(pacman -Qq 2>/dev/null | wc -l) (pacman)")
-elif echo $NAME | grep -q 'openSUSE'; then
-	export pm=$(echo "$(rpm -qa 2>/dev/null | wc -l) (zypper)")
-elif echo $NAME | grep -q 'Fedora'; then
+elif [ -f /bin/rpm ]; then
 	export pm=$(echo "$(rpm -qa 2>/dev/null | wc -l) (rpm)")
-elif echo $NAME | grep -q 'Debian'; then
+elif [ -f /bin/dpkg ]; then
 	export pm=$(echo "$(apt list --installed 2>/dev/null | wc -l) (dpkg)")
-elif echo $NAME | grep -q 'Mint'; then
-	export pm=$(echo "$(apt list --installed 2>/dev/null | wc -l) (apt)")
+else
+	export pm=$(echo Unknown)
 fi
 
 # disk model
 if [ -f /sys/block/sda/device/model ]; then
 	export diskc="$(cat /sys/block/sda/device/model)"
+elif [ -e /sys/block/mmcblk0/device/name ]; then
+	export diskc="$(cat /sys/block/mmcblk0/device/name)"
 else
 	export diskc=$(echo Unknown)
 fi
 
 # motherboard name
-hostv="$(cat /sys/class/dmi/id/product_name)"
+if [ -f /sys/class/dmi/id/product_name ]; then
+	export hostv="$(cat /sys/class/dmi/id/product_name)"
+		if [ "$hostv" == "Default string" ]; then
+			export hostv=$(echo Unknown)
+		fi
+else
+	export hostv=$(echo Unknown)
+fi
+
 if [ -f /sys/class/dmi/id/board_name ]; then
 	export hostp=$(cat /sys/class/dmi/id/board_name)
 else
 	export hostp=$(echo Unknown)
 fi
 
-if [ "$hostv" == "Default string" ]; then
-	export hostv=$(echo Unknown)
-fi
-
 # cpu arch
-arc=$(uname -m)
-if [ "$arc" == x86_64 ]; then
-	export arc=$(echo)
+arch=$(uname -m)
+if [ "$arch" == x86_64 ]; then
+	export arch=$(echo)
 fi
 
 # initd
@@ -179,12 +181,12 @@ kernel=$(sed "s/version // ; s/ (.*//" /proc/version)
 uptime=$(uptime -p | sed "s/up //")
 shell="$(printf "$SHELL" | sed "s/\/bin\///" | sed "s/\/usr//")"
 session=$XDG_SESSION_TYPE
-terma="$(readlink /proc/$$/fd/2 | sed "s/\/dev//" | sed "s/\///" | sed "s/\///")"
+terma="$(tty | sed "s/\/dev//" | sed "s/\///" | sed "s/\///")"
 cpu="$(grep "model name" /proc/cpuinfo | head -n1 | sed "s/\model name	://" | sed "s/\ //" | sed "s/\ CPU//")"
 
 printf "${dscolor}${dslogo7}$USER@$host\n"
 printf "${dscolor}${dslogo7}OS      ${nc} $NAME\n"
-printf "${dscolor}${dslogo7}Kernel  ${nc} $kernel $arc\n"
+printf "${dscolor}${dslogo7}Kernel  ${nc} $kernel $arch\n"
 printf "${dscolor}${dslogo1}Cpu     ${nc} $cpu\n"
 printf "${dscolor}${dslogo2}Host    ${nc} $hostv $hostp\n"
 printf "${dscolor}${dslogo3}Init    ${nc} $init\n"
@@ -198,5 +200,3 @@ printf "${dscolor}${dslogo7}Disk    ${nc} $diskc\n"
 if [ "$colorsoff" != 1 ]; then
 	printf "${dslogo7}\033[0;31m● \033[0;32m● \033[0;33m● \033[0;34m● \033[0;35m● \033[0;36m● \033[0;37m●\033[0m\n"
 fi
-
-exit $?
