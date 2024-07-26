@@ -26,12 +26,15 @@ unset NAME
 if [ "$NAME" = "" ]; then
 	if [ -f /etc/os-release ]; then
 		. /etc/os-release
-			elif [ -f /system/bin/getprop ]; then
-				export NAME="Android $(getprop ro.build.version.release)"
+	fi
+
+	if [ -f /system/bin/getprop ]; then
+		export NAME="Android $(getprop ro.build.version.release)"
 	fi
 else
 	export NAME=Unknown
 fi
+
 # nc = no color
 nc="\033[0m"
 
@@ -130,7 +133,7 @@ elif [ -f /bin/rpm ]; then
 elif [ -f /bin/dpkg ]; then
 	export pm="$(apt list --installed 2>/dev/null | wc -l) (dpkg)"
 elif echo $NAME | grep -q 'Android'; then
-	export pm="$(pm list packages -f 2>/dev/null | wc -l) (apk)"
+	export pm="$(pm list packages 2>/dev/null | wc -l) (apk)"
 else
 	export pm=Unknown
 fi
@@ -153,31 +156,34 @@ else
 	export hostv=Unknown
 fi
 
-if [ -f /sys/class/dmi/id/board_name ]; then
-	export hostp=$(cat /sys/class/dmi/id/board_name)
-fi
-
 # initd
 if [ -f /sbin/init ]; then
-	export init="$(realpath /sbin/init | sed "s/\/bin\///" | sed "s/\/sbin\///" | sed "s/\/usr//" | sed "s/\/lib//" | sed "s/\-init//" | sed "s/\/systemd//")"
+	export init="$(readlink /sbin/init | sed "s/\/bin\///" | sed "s/\/sbin\///" | sed "s/\/usr//" | sed "s/\/lib//" | sed "s/\-init//" | sed "s/\/systemd\///" 2>/dev/null)"
 elif echo $NAME | grep -q 'Android'; then
 	export init=init.rc
 else
 	export init=Unknown
 fi
 
+# cpu
 if echo $NAME | grep -q 'Android'; then
-	export cpu="$(grep "Hardware" /proc/cpuinfo | head -n1 | sed "s/\Hardware	://" | sed "s/\ //")"
+	export cpu="$(grep "Hardware" /proc/cpuinfo | head -n1 | sed "s/\Hardware	://" | sed "s/\ //" 2>/dev/null)"
 else
-	cpu="$(grep "model name" /proc/cpuinfo | head -n1 | sed "s/\model name	://" | sed "s/\ //" | sed "s/\ CPU//")"
+	export cpu="$(grep "model name" /proc/cpuinfo | head -n1 | sed "s/\model name	://" | sed "s/\ //" | sed "s/\ CPU//" 2>/dev/null)"
+fi
+
+if [ "$cpu" == "" ]; then
+	export cpu=Unknown
 fi
 
 # the meat and potatoes, actual fetch
 host="$(hostname 2>/dev/null || cat /proc/sys/kernel/hostname 2>/dev/null)"
+hostp=$(cat /sys/class/dmi/id/board_name 2>/dev/null)
 kernel=$(uname -srm)
-uptime=$(uptime -p | sed "s/up //")
-shell="$(echo "$SHELL" | sed "s/\/bin\///" | sed "s/\/usr//" | sed "s/\/system//")"
-terma="$(tty | sed "s/\/dev//" | sed "s/\///" | sed "s/\///")"
+USER=$(id -un)
+uptime="$(uptime -p | sed "s/up //")"
+shell="$(echo "$SHELL" | sed "s/\/bin\///" | sed "s/\/usr//" | sed "s/\/system//" 2>/dev/null)"
+terma="$(tty | sed "s/\/dev//" | sed "s/\///" | sed "s/\///" 2>/dev/null || readlink /proc/$$/fd/2 | sed "s/\/dev//" | sed "s/\///" | sed "s/\///" 2>/dev/null)"
 
 printf "${dscolor}${dslogo7}$USER@$host\n"
 printf "${dscolor}${dslogo7}OS      ${nc} $NAME\n"
@@ -190,5 +196,4 @@ printf "${dscolor}${dslogo6}Shell   ${nc} $shell\n"
 printf "${dscolor}${dslogo7}Pkgs    ${nc} $pm\n"
 printf "${dscolor}${dslogo7}Term    ${nc} $terma\n"
 printf "${dscolor}${dslogo7}Disk    ${nc} $diskc\n"
-
 printf "${dslogo7}\033[0;31m● \033[0;32m● \033[0;33m● \033[0;34m● \033[0;35m● \033[0;36m● \033[0;37m●\033[0m\n"
