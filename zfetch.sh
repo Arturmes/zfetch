@@ -147,7 +147,7 @@ else
 	export diskc=Unknown
 fi
 
-# motherboard name
+# host
 if [ -f /sys/class/dmi/id/product_name ]; then
 	export hostv="$(cat /sys/class/dmi/id/product_name)"
 elif echo $NAME | grep -q 'Android'; then
@@ -158,7 +158,7 @@ fi
 
 # initd
 if [ -f /sbin/init ]; then
-	export init="$(readlink /sbin/init | sed "s/\/bin\///" | sed "s/\/sbin\///" | sed "s/\/usr//" | sed "s/\/lib//" | sed "s/\-init//" | sed "s/\/systemd\///" 2>/dev/null)"
+	export init="$(readlink /sbin/init | sed "s/\/bin\///" | sed "s/\/sbin\///" | sed "s/\/usr//" | sed "s/\/lib//" | sed "s/\-init//" | sed "s/\/systemd\///")"
 elif echo $NAME | grep -q 'Android'; then
 	export init=init.rc
 else
@@ -166,15 +166,15 @@ else
 fi
 
 # cpu
-if echo $NAME | grep -q 'Android'; then
-	export cpu="$(grep "Hardware" /proc/cpuinfo | head -n1 | sed "s/\Hardware	://" | sed "s/\ //" 2>/dev/null)"
-else
-	export cpu="$(grep "model name" /proc/cpuinfo | head -n1 | sed "s/\model name	://" | sed "s/\ //" | sed "s/\ CPU//" 2>/dev/null)"
-fi
+cpu="$(grep "Hardware" /proc/cpuinfo | head -n1 | sed "s/Hardware	\: //")"
 
 if [ "$cpu" == "" ]; then
-	export cpu=Unknown
+	export cpu="$(grep "model name" /proc/cpuinfo | head -n1 | sed "s/model name	\: //" | sed "s/ CPU//")"
+	if [ "$cpu" == "" ]; then
+		export cpu=Unknown
+	fi
 fi
+
 
 # the meat and potatoes, actual fetch
 host="$(hostname 2>/dev/null || cat /proc/sys/kernel/hostname 2>/dev/null)"
@@ -182,8 +182,8 @@ hostp=$(cat /sys/class/dmi/id/board_name 2>/dev/null)
 kernel=$(uname -srm)
 USER=$(id -un)
 uptime="$(uptime -p | sed "s/up //")"
-shell="$(echo "$SHELL" | sed "s/\/bin\///" | sed "s/\/usr//" | sed "s/\/system//" 2>/dev/null)"
-terma="$(tty | sed "s/\/dev//" | sed "s/\///" | sed "s/\///" 2>/dev/null || readlink /proc/$$/fd/2 | sed "s/\/dev//" | sed "s/\///" | sed "s/\///" 2>/dev/null)"
+shell="$(echo "$SHELL" | sed "s/\/bin\///" | sed "s/\/usr//" | sed "s/\/system//")"
+terma="$(tty | sed "s/\/dev//" | sed "s/\///" | sed "s/\///" || readlink /proc/$$/fd/2 | sed "s/\/dev//" | sed "s/\///" | sed "s/\///")"
 
 printf "${dscolor}${dslogo7}$USER@$host\n"
 printf "${dscolor}${dslogo7}OS      ${nc} $NAME\n"
