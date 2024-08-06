@@ -183,7 +183,7 @@ kernel=$(uname -srm)
 USER=$(id -un)
 uptime="$(uptime -p | sed "s/up //")"
 shell="$(echo "$SHELL" | sed "s/\/bin\///" | sed "s/\/usr//" | sed "s/\/system//")"
-terma="$(tty | sed "s/\/dev//" | sed "s/\///" | sed "s/\///" || readlink /proc/$$/fd/2 | sed "s/\/dev//" | sed "s/\///" | sed "s/\///")"
+terma="$(readlink /proc/$$/fd/2 | sed "s/\/dev//" | sed "s/\///" | sed "s/\///")"
 
 printf "${dscolor}${dslogo7}$USER@$host\n"
 printf "${dscolor}${dslogo7}OS      ${nc} $NAME\n"
