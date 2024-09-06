@@ -114,13 +114,13 @@ elif echo $NAME | grep -q 'Android'; then
 
 else
 	dscolor="\033[0;37m" # white
-	dslogo1="         "
-	dslogo2="  ('' )  "
-	dslogo3="  |() |  "
-	dslogo4="  (^(^)  "
-	dslogo5="         "
-	dslogo6="         "
-	dslogo7=$dslogo6
+	dslogo1="          "
+	dslogo2="   .~.    "
+	dslogo3="   /V\    "
+	dslogo4="  /   \   "
+	dslogo5=" /(   )\  "
+	dslogo6="  ^'~'^   "
+	dslogo7="          "
 fi
 
 # package manager
@@ -159,10 +159,11 @@ fi
 # initd
 if [ -f /sbin/init ]; then
 	export init="$(readlink /sbin/init | sed "s/\/bin\///" | sed "s/\/sbin\///" | sed "s/\/usr//" | sed "s/\/lib//" | sed "s/\-init//" | sed "s/\/systemd\///")"
+	if [ "$init" == "" ]; then
+		export init=initd
+	fi
 elif echo $NAME | grep -q 'Android'; then
 	export init=init.rc
-else
-	export init=Unknown
 fi
 
 # cpu
@@ -174,7 +175,6 @@ if [ "$cpu" == "" ]; then
 		export cpu=Unknown
 	fi
 fi
-
 
 # the meat and potatoes, actual fetch
 host="$(hostname 2>/dev/null || cat /proc/sys/kernel/hostname 2>/dev/null)"
