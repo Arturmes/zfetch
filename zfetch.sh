@@ -28,11 +28,11 @@ if [ "$NAME" = "" ]; then
 		. /etc/os-release
 	fi
 
-	if [ -f /system/bin/getprop ]; then
-		export NAME="Android $(getprop ro.build.version.release)"
+	if [ -f /etc/prop.default ] && [ -f /bin/getprop ]; then
+		NAME="Android $(getprop ro.build.version.release)"
 	fi
 else
-	export NAME=Unknown
+	NAME=Unknown
 fi
 
 # nc = no color
@@ -111,76 +111,83 @@ elif echo $NAME | grep -q 'Android'; then
 	dslogo5="| (_| | | | | (_| | | | (_) | | (_| |   "
 	dslogo6=" \__,_|_| |_|\__,_|_|  \___/|_|\__,_|   "
 	dslogo7="                                        "
-
 else
 	dscolor="\033[0;37m" # white
-	dslogo1="          "
-	dslogo2="   .~.    "
-	dslogo3="   /V\    "
-	dslogo4="  /   \   "
-	dslogo5=" /(   )\  "
-	dslogo6="  ^'~'^   "
-	dslogo7="          "
+	dslogo1="            "
+	dslogo2="    .~.     "
+	dslogo3="    /V\     "
+	dslogo4="   // \\\\\    "
+	dslogo5="  /( _ )\   "
+	dslogo6="   ^' '^    "
+	dslogo7="            "
 fi
 
 # package manager
-if [ -f /usr/bin/ebuild ]; then
-	export pm="$(ls /var/db/pkg/*/*/BUILD_TIME 2>/dev/null | wc -l) (portage)"
+if echo $NAME | grep -q 'Android' && [ -f /bin/pm ]; then
+	pm="$(pm list packages 2>/dev/null | wc -l) (apk)"
+elif [ -f /usr/bin/ebuild ]; then
+	pm="$(ls /var/db/pkg/*/*/BUILD_TIME 2>/dev/null | wc -l) (portage)"
 elif [ -f /bin/pacman ]; then
-	export pm="$(pacman -Qq 2>/dev/null | wc -l) (pacman)"
+	pm="$(pacman -Qq 2>/dev/null | wc -l) (pacman)"
 elif [ -f /bin/rpm ]; then
-	export pm="$(rpm -qa 2>/dev/null | wc -l) (rpm)"
+	pm="$(rpm -qa 2>/dev/null | wc -l) (rpm)"
 elif [ -f /bin/dpkg ]; then
-	export pm="$(apt list --installed 2>/dev/null | wc -l) (dpkg)"
-elif echo $NAME | grep -q 'Android'; then
-	export pm="$(pm list packages 2>/dev/null | wc -l) (apk)"
+	pm="$(apt list --installed 2>/dev/null | wc -l) (dpkg)"
 else
-	export pm=Unknown
+	pm=Unknown
 fi
 
 # disk model
 if [ -f /sys/block/sda/device/model ]; then
-	export diskc="$(cat /sys/block/sda/device/model)"
+	diskc="$(cat /sys/block/sda/device/model)"
 elif [ -f /sys/block/mmcblk0/device/name ]; then
-	export diskc="$(cat /sys/block/mmcblk0/device/name)"
+	diskc="$(cat /sys/block/mmcblk0/device/name)"
 else
-	export diskc=Unknown
+	diskc=Unknown
 fi
 
-# host
-if [ -f /sys/class/dmi/id/product_name ]; then
-	export hostv="$(cat /sys/class/dmi/id/product_name)"
+# board
+if [ -d /sys/class/dmi/id ]; then
+	hostv="$(cat /sys/class/dmi/id/product_name)"
+	hostp="$(cat /sys/class/dmi/id/board_name)"
 elif echo $NAME | grep -q 'Android'; then
-	export hostv=$(getprop ro.product.model)
+	hostv=$(getprop ro.product.model)
 else
-	export hostv=Unknown
+	hostv=Unknown
 fi
 
 # initd
 if [ -f /sbin/init ]; then
-	export init="$(readlink /sbin/init | sed "s/\/bin\///" | sed "s/\/sbin\///" | sed "s/\/usr//" | sed "s/\/lib//" | sed "s/\-init//" | sed "s/\/systemd\///")"
-	if [ "$init" == "" ]; then
-		export init=initd
-	fi
+	init="$(readlink /sbin/init | sed "s/\/bin\///" | sed "s/\/sbin\///" | sed "s/\/usr//" | sed "s/\/lib//" | sed "s/\-init//" | sed "s/\/systemd\///")"
+		if [ "$init" == "" ]; then
+			init=initd
+		fi
 elif echo $NAME | grep -q 'Android'; then
-	export init=init.rc
+	init=init.rc
 fi
 
 # cpu
 cpu="$(grep "Hardware" /proc/cpuinfo | head -n1 | sed "s/Hardware	\: //")"
 
 if [ "$cpu" == "" ]; then
-	export cpu="$(grep "model name" /proc/cpuinfo | head -n1 | sed "s/model name	\: //" | sed "s/ CPU//")"
-	if [ "$cpu" == "" ]; then
-		export cpu=Unknown
-	fi
+	cpu="$(grep "model name" /proc/cpuinfo | head -n1 | sed "s/model name	\: //" | sed "s/ CPU//")"
+		if [ "$cpu" == "" ]; then
+			cpu=Unknown
+		fi
+fi
+
+# hostname
+if [ -f /bin/hostname ]; then
+	host=$(hostname)
+elif [ -f /proc/sys/kernel/hostname ]; then
+	host="$(cat /proc/sys/kernel/hostname)"
+else
+	host=localhost
 fi
 
 # the meat and potatoes, actual fetch
-host="$(hostname 2>/dev/null || cat /proc/sys/kernel/hostname 2>/dev/null)"
-hostp=$(cat /sys/class/dmi/id/board_name 2>/dev/null)
-kernel=$(uname -srm)
 USER=$(id -un)
+kernel=$(uname -srm)
 uptime="$(uptime -p | sed "s/up //")"
 shell="$(echo "$SHELL" | sed "s/\/bin\///" | sed "s/\/usr//" | sed "s/\/system//")"
 terma="$(readlink /proc/$$/fd/2 | sed "s/\/dev//" | sed "s/\///" | sed "s/\///")"
