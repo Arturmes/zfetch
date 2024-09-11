@@ -51,8 +51,8 @@ if echo $NAME | grep -q 'Arch'; then
 elif echo $NAME | grep -q 'Artix'; then
 	dscolor="\033[0;36m" # cyan
 	dslogo1="        /\         "
-	dslogo2="       /',\        "
-	dslogo3="      /   ,\       "
+	dslogo2="       /, \        "
+	dslogo3="      /  ',\       "
 	dslogo4="     /  ,'  \      "
 	dslogo5="    / ,'  ', \     "
 	dslogo6="   /.'      '.\    "
@@ -164,11 +164,12 @@ if [ -f /sbin/init ]; then
 		fi
 elif echo $NAME | grep -q 'Android'; then
 	init=init.rc
+else
+	init=Unknown
 fi
 
 # cpu
 cpu="$(grep "Hardware" /proc/cpuinfo | head -n1 | sed "s/Hardware	\: //")"
-
 if [ "$cpu" == "" ]; then
 	cpu="$(grep "model name" /proc/cpuinfo | head -n1 | sed "s/model name	\: //" | sed "s/ CPU//")"
 		if [ "$cpu" == "" ]; then
@@ -176,21 +177,42 @@ if [ "$cpu" == "" ]; then
 		fi
 fi
 
-# hostname
-if [ -f /bin/hostname ]; then
-	host=$(hostname)
-elif [ -f /proc/sys/kernel/hostname ]; then
-	host="$(cat /proc/sys/kernel/hostname)"
+# shell
+if [ -f /bin/basename ]; then
+	shell=$(basename "${SHELL}")
 else
-	host=localhost
+	shell="$(echo "$SHELL" | sed "s/\/bin\///" | sed "s/\/sbin\///" | sed "s/\/usr//" | sed "s/\/system//")"
+fi
+
+# virtual terminal
+if [ -e /proc/$$/fd/2 ]; then
+	termv="$(readlink /proc/$$/fd/2 | sed "s/\/dev//" | sed "s/\///" | sed "s/\///")"
+else
+	termv=Unknown
+fi
+
+if [ -f /proc/$PPID/status ]; then
+	termp="$(grep PPid /proc/$PPID/status | sed "s/PPid:	//")"
+		if [ -d "/proc/$termp" ]; then
+			terma="$(cat /proc/$termp/comm)"
+		fi
+else
+	terma=$termv
+fi
+
+if [ "$terma" == "" ]; then
+	terma=$termv
+elif [ "$terma" == "init" ]; then
+	terma=$termv
+elif [ "$terma" == "login" ]; then
+	terma=$termv
 fi
 
 # the meat and potatoes, actual fetch
 USER=$(id -un)
+host=$(uname -n)
 kernel=$(uname -srm)
 uptime="$(uptime -p | sed "s/up //")"
-shell="$(echo "$SHELL" | sed "s/\/bin\///" | sed "s/\/usr//" | sed "s/\/system//")"
-terma="$(readlink /proc/$$/fd/2 | sed "s/\/dev//" | sed "s/\///" | sed "s/\///")"
 
 printf "${dscolor}${dslogo7}$USER@$host\n"
 printf "${dscolor}${dslogo7}OS      ${nc} $NAME\n"
