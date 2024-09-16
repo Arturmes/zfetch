@@ -57,6 +57,33 @@ elif echo $NAME | grep -q 'Artix'; then
 	dslogo5="    / ,'  ', \     "
 	dslogo6="   /.'      '.\    "
 	dslogo7="                   "
+elif echo $NAME | grep -q 'Manjaro'; then
+	dscolor="\033[0;32m" # green
+	dslogo1="  ||||||||| ||||   "
+	dslogo2="  ||||||||| ||||   "
+	dslogo3="  ||||      ||||   "
+	dslogo4="  |||| |||| ||||   "
+	dslogo5="  |||| |||| ||||   "
+	dslogo6="  |||| |||| ||||   "
+	dslogo7="                   "
+elif echo $NAME | grep -q 'Raspbian'; then
+	dscolor="\033[0;31m" # red
+	dslogo1="    __  __    "
+	dslogo2="   (_\\)(/_)   "
+	dslogo3="   (_(__)_)   "
+	dslogo4="  (_(_)(_)_)  "
+	dslogo5="   (_(__)_)   "
+	dslogo6="     (__)     "
+	dslogo7="              "
+elif echo $NAME | grep -q 'Debian'; then
+	dscolor="\033[0;31m" # red
+	dslogo1="    _____      "
+	dslogo2="   /  __ \\     "
+	dslogo3="  |  /    |    "
+	dslogo4="  |  \\___-     "
+	dslogo5="   -_          "
+	dslogo6="    --_        "
+	dslogo7="               "
 elif echo $NAME | grep -q 'Gentoo'; then
 	dscolor="\033[0;35m" # purple
 	dslogo1="         "
@@ -66,51 +93,42 @@ elif echo $NAME | grep -q 'Gentoo'; then
 	dslogo5="         "
 	dslogo6="         "
 	dslogo7=$dslogo6
-elif echo $NAME | grep -q 'Debian'; then
-	dscolor="\033[0;31m" # red
-	dslogo1="         "
-	dslogo2="   -^-   "
-	dslogo3="  ( @,)  "
-	dslogo4="  '-_    "
-	dslogo5="         "
-	dslogo6="         "
-	dslogo7=$dslogo6
-elif echo $NAME | grep -q 'openSUSE'; then
+elif echo $NAME | grep -q 'SUSE'; then
 	dscolor="\033[0;32m" # green
-	dslogo1="         "
-	dslogo2="    __   "
-	dslogo3="  /~_')  "
-	dslogo4="  @' '   "
-	dslogo5="         "
-	dslogo6="         "
+	dslogo1="          "
+	dslogo2="    __    "
+	dslogo3="  /~_')   "
+	dslogo4="  @' '    "
+	dslogo5="          "
+	dslogo6="          "
 	dslogo7=$dslogo6
 elif echo $NAME | grep -q 'Fedora'; then
 	dscolor="\033[0;34m" # blue
-	dslogo1="         "
-	dslogo2="   /'')  "
-	dslogo3=" .-''-.  "
-	dslogo4=" '-..-'  "
-	dslogo5=" (__/    "
-	dslogo6="         "
+	dslogo1="          "
+	dslogo2="   /'')   "
+	dslogo3=" .-''-.   "
+	dslogo4=" '-..-'   "
+	dslogo5=" (__/     "
+	dslogo6="          "
 	dslogo7=$dslogo6
 elif echo $NAME | grep -q 'Mint'; then
 	dscolor="\033[0;32m" # blue
-	dslogo1="         "
-	dslogo2=" || -.-  "
-	dslogo3=" ||_|||  "
-	dslogo4=" \\____/  "
-	dslogo5="         "
-	dslogo6="         "
+	dslogo1="          "
+	dslogo2=" || -.-   "
+	dslogo3=" ||_|||   "
+	dslogo4=" \\\\\____/  "
+	dslogo5="          "
+	dslogo6="          "
 	dslogo7=$dslogo6
 elif echo $NAME | grep -q 'Android'; then
-	dscolor="\033[0;32m"
-	dslogo1="                 _           _     _    "
-	dslogo2="                | |         (_)   | |   "
-	dslogo3="  __ _ _ __   __| |_ __ ___  _  __| |   "
-	dslogo4=" / _/ | '_ \ / _. | '__/ _ \| |/ _. |   "
-	dslogo5="| (_| | | | | (_| | | | (_) | | (_| |   "
-	dslogo6=" \__,_|_| |_|\__,_|_|  \___/|_|\__,_|   "
-	dslogo7="                                        "
+	dscolor="\033[0;32m" # green
+	dslogo1="    ;,           ,;    "
+	dslogo2="     ';,.-----.,;'     "
+	dslogo3="    ,'           ',    "
+	dslogo4="   /    O     O    \\   "
+	dslogo5="  |                 |  "
+	dslogo6="  '-----------------'  "
+	dslogo7="                       "
 else
 	dscolor="\033[0;37m" # white
 	dslogo1="            "
@@ -125,7 +143,7 @@ fi
 # package manager
 if echo $NAME | grep -q 'Android' && [ -f /bin/pm ]; then
 	pm="$(pm list packages 2>/dev/null | wc -l) (apk)"
-elif [ -f /usr/bin/ebuild ]; then
+elif [ -f /bin/ebuild ]; then
 	pm="$(ls /var/db/pkg/*/*/BUILD_TIME 2>/dev/null | wc -l) (portage)"
 elif [ -f /bin/pacman ]; then
 	pm="$(pacman -Qq 2>/dev/null | wc -l) (pacman)"
