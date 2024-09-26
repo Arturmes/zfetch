@@ -187,17 +187,16 @@ else
 fi
 
 # cpu
-cpu="$(grep "Hardware" /proc/cpuinfo | head -n1 | sed "s/Hardware	\: //")"
+cpu="$(awk -F '\\s*: | @' \
+                            '/model name|Hardware|Processor|^cpu model|chip type|^cpu type/ {
+                            cpu=$2; if ($1 == "Hardware") exit } END { print cpu }' /proc/cpuinfo)"	# part from neofetch
 if [ "$cpu" == "" ]; then
-	cpu="$(grep "model name" /proc/cpuinfo | head -n1 | sed "s/model name	\: //" | sed "s/ CPU//")"
-		if [ "$cpu" == "" ]; then
-			cpu=Unknown
-		fi
+	cpu=Unknown
 fi
 
 # shell
 if [ -f /bin/basename ]; then
-	shell=$(basename "${SHELL}")
+	shell=$(basename "$SHELL")
 else
 	shell="$(echo "$SHELL" | sed "s/\/bin\///" | sed "s/\/sbin\///" | sed "s/\/usr//" | sed "s/\/system//")"
 fi
@@ -229,18 +228,24 @@ fi
 # the meat and potatoes, actual fetch
 USER=$(id -un)
 host=$(uname -n)
-kernel=$(uname -srm)
+kernel=$(uname -sr)
 uptime="$(uptime -p | sed "s/up //")"
 
 printf "${dscolor}${dslogo7}$USER@$host\n"
-printf "${dscolor}${dslogo7}OS      ${nc} $NAME\n"
+if [ "$NAME" != "Unknown" ]; then
+	printf "${dscolor}${dslogo7}OS      ${nc} $NAME\n"
+fi
 printf "${dscolor}${dslogo1}Kernel  ${nc} $kernel\n"
 printf "${dscolor}${dslogo2}Cpu     ${nc} $cpu\n"
 printf "${dscolor}${dslogo3}Host    ${nc} $hostv $hostp\n"
 printf "${dscolor}${dslogo4}Init    ${nc} $init\n"
 printf "${dscolor}${dslogo5}Uptime  ${nc} $uptime\n"
 printf "${dscolor}${dslogo6}Shell   ${nc} $shell\n"
-printf "${dscolor}${dslogo7}Pkgs    ${nc} $pm\n"
+if [ "$pm" != "Unknown" ]; then
+	printf "${dscolor}${dslogo7}Pkgs    ${nc} $pm\n"
+fi
 printf "${dscolor}${dslogo7}Term    ${nc} $terma\n"
-printf "${dscolor}${dslogo7}Disk    ${nc} $diskc\n"
+if [ "$diskc" != "Unknown" ]; then
+	printf "${dscolor}${dslogo7}Disk    ${nc} $diskc\n"
+fi
 printf "${dslogo7}\033[0;31m● \033[0;32m● \033[0;33m● \033[0;34m● \033[0;35m● \033[0;36m● \033[0;37m●\033[0m\n"

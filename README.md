@@ -1,6 +1,6 @@
 # zfetch 📜
-![](https://raw.githubusercontent.com/jornmann/zfetch/img/zfetchscrot.png)
-## What's zfetch? 🤔
+![](https://raw.githubusercontent.com/Arturmes/zfetch/main/img/zfetch.png)
+## What's zfetch?
 zfetch is a fetch script used to quickly show system information in terminal.
 ## What does it show? 🤔
 Currently it shows this information:
@@ -8,14 +8,14 @@ Currently it shows this information:
 - Your username and your machine name.
 - Your OS.
 - Your kernel.
-- Your CPU
-- Your motherboard
-- Your system init
+- Your CPU.
+- Your motherboard.
+- Your system init.
 - Machine uptime.
 - Terminal Shell.
-- OS package manager (if know)
-- Virtual term
-- Disk model
+- OS package manager.
+- Virtual terminal.
+- Disk model.
 - 7 colored dots to identify terminal colors.
 ## Installation 🔧
 ```
