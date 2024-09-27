@@ -22,15 +22,10 @@
 # variables used: $NAME
 # we do a check to see if $NAME is already set, if not, we try to detect OS
 # ourselves
-unset NAME
-if [ "$NAME" = "" ]; then
-	if [ -f /etc/os-release ]; then
-		. /etc/os-release
-	fi
-
-	if [ -f /etc/prop.default ] && [ -f /bin/getprop ]; then
-		NAME="Android $(getprop ro.build.version.release)"
-	fi
+if [[ -f /etc/prop.default ]] && [[ -f /bin/getprop ]]; then
+	NAME="Android $(getprop ro.build.version.release)"
+elif [[ -f /etc/os-release ]]; then
+	. /etc/os-release
 else
 	NAME=Unknown
 fi
@@ -141,43 +136,45 @@ else
 fi
 
 # package manager
-if echo $NAME | grep -q 'Android' && [ -f /bin/pm ]; then
+if echo $NAME | grep -q 'Android' && [[ -f /bin/pm ]]; then
 	pm="$(pm list packages 2>/dev/null | wc -l) (apk)"
-elif [ -f /bin/ebuild ]; then
+elif [[ -f /bin/ebuild ]]; then
 	pm="$(ls /var/db/pkg/*/*/BUILD_TIME 2>/dev/null | wc -l) (portage)"
-elif [ -f /bin/pacman ]; then
+elif [[ -f /bin/pacman ]]; then
 	pm="$(pacman -Qq 2>/dev/null | wc -l) (pacman)"
-elif [ -f /bin/rpm ]; then
+elif [[ -f /bin/rpm ]]; then
 	pm="$(rpm -qa 2>/dev/null | wc -l) (rpm)"
-elif [ -f /bin/dpkg ]; then
+elif [[ -f /bin/dpkg ]]; then
 	pm="$(apt list --installed 2>/dev/null | wc -l) (dpkg)"
 else
 	pm=Unknown
 fi
 
 # disk model
-if [ -f /sys/block/sda/device/model ]; then
+if [[ -f /sys/block/sda/device/model ]]; then
 	diskc="$(cat /sys/block/sda/device/model)"
-elif [ -f /sys/block/mmcblk0/device/name ]; then
+elif [[ -f /sys/block/mmcblk0/device/name ]]; then
 	diskc="$(cat /sys/block/mmcblk0/device/name)"
 else
 	diskc=Unknown
 fi
 
 # board
-if [ -d /sys/class/dmi/id ]; then
+if [[ -d /sys/class/dmi/id ]]; then
 	hostv="$(cat /sys/class/dmi/id/product_name)"
-	hostp="$(cat /sys/class/dmi/id/board_name)"
+	hostv+=" $(cat /sys/class/dmi/id/board_name)"
 elif echo $NAME | grep -q 'Android'; then
 	hostv=$(getprop ro.product.model)
+elif [[ -f /sys/firmware/devicetree/base/model ]]; then
+	hostv="$(cat /sys/firmware/devicetree/base/model)"
 else
 	hostv=Unknown
 fi
 
 # initd
-if [ -f /sbin/init ]; then
+if [[ -f /sbin/init ]]; then
 	init="$(readlink /sbin/init | sed "s/\/bin\///" | sed "s/\/sbin\///" | sed "s/\/usr//" | sed "s/\/lib//" | sed "s/\-init//" | sed "s/\/systemd\///")"
-		if [ "$init" == "" ]; then
+		if [[ "$init" == "" ]]; then
 			init=initd
 		fi
 elif echo $NAME | grep -q 'Android'; then
@@ -190,38 +187,38 @@ fi
 cpu="$(awk -F '\\s*: | @' \
                             '/model name|Hardware|Processor|^cpu model|chip type|^cpu type/ {
                             cpu=$2; if ($1 == "Hardware") exit } END { print cpu }' /proc/cpuinfo)"	# part from neofetch
-if [ "$cpu" == "" ]; then
+if [[ "$cpu" == "" ]]; then
 	cpu=Unknown
 fi
 
 # shell
-if [ -f /bin/basename ]; then
+if [[ -f /bin/basename ]]; then
 	shell=$(basename "$SHELL")
 else
 	shell="$(echo "$SHELL" | sed "s/\/bin\///" | sed "s/\/sbin\///" | sed "s/\/usr//" | sed "s/\/system//")"
 fi
 
 # virtual terminal
-if [ -e /proc/$$/fd/2 ]; then
+if [[ -e /proc/$$/fd/2 ]]; then
 	termv="$(readlink /proc/$$/fd/2 | sed "s/\/dev//" | sed "s/\///" | sed "s/\///")"
 else
 	termv=Unknown
 fi
 
-if [ -f /proc/$PPID/status ]; then
+if [[ -f /proc/$PPID/status ]]; then
 	termp="$(grep PPid /proc/$PPID/status | sed "s/PPid:	//")"
-		if [ -d "/proc/$termp" ]; then
+		if [[ -d "/proc/$termp" ]]; then
 			terma="$(cat /proc/$termp/comm)"
 		fi
 else
 	terma=$termv
 fi
 
-if [ "$terma" == "" ]; then
+if [[ "$terma" == "" ]]; then
 	terma=$termv
-elif [ "$terma" == "init" ]; then
+elif [[ "$terma" == "init" ]]; then
 	terma=$termv
-elif [ "$terma" == "login" ]; then
+elif [[ "$terma" == "login" ]]; then
 	terma=$termv
 fi
 
@@ -232,12 +229,10 @@ kernel=$(uname -sr)
 uptime="$(uptime -p | sed "s/up //")"
 
 printf "${dscolor}${dslogo7}$USER@$host\n"
-if [ "$NAME" != "Unknown" ]; then
-	printf "${dscolor}${dslogo7}OS      ${nc} $NAME\n"
-fi
+printf "${dscolor}${dslogo7}OS      ${nc} $NAME\n"
 printf "${dscolor}${dslogo1}Kernel  ${nc} $kernel\n"
 printf "${dscolor}${dslogo2}Cpu     ${nc} $cpu\n"
-printf "${dscolor}${dslogo3}Host    ${nc} $hostv $hostp\n"
+printf "${dscolor}${dslogo3}Host    ${nc} $hostv\n"
 printf "${dscolor}${dslogo4}Init    ${nc} $init\n"
 printf "${dscolor}${dslogo5}Uptime  ${nc} $uptime\n"
 printf "${dscolor}${dslogo6}Shell   ${nc} $shell\n"
