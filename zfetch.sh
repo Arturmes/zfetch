@@ -136,8 +136,8 @@ else
 fi
 
 # package manager
-if echo $NAME | grep -q 'Android' && [[ -f /bin/pm ]]; then
-	pm="$(pm list packages 2>/dev/null | wc -l) (apk)"
+if echo $NAME | grep -q 'Android' && [[ -f /bin/cmd ]]; then
+	pm="$(cmd package list packages 2>/dev/null | wc -l) (apk)"
 elif [[ -f /bin/ebuild ]]; then
 	pm="$(ls /var/db/pkg/*/*/BUILD_TIME 2>/dev/null | wc -l) (portage)"
 elif [[ -f /bin/pacman ]]; then
@@ -164,7 +164,8 @@ if [[ -d /sys/class/dmi/id ]]; then
 	hostv="$(cat /sys/class/dmi/id/product_name)"
 	hostv+=" $(cat /sys/class/dmi/id/board_name)"
 elif echo $NAME | grep -q 'Android'; then
-	hostv=$(getprop ro.product.model)
+	hostv=$(getprop ro.product.brand)
+	hostv+=" $(getprop ro.product.model)"
 elif [[ -f /sys/firmware/devicetree/base/model ]]; then
 	hostv="$(cat /sys/firmware/devicetree/base/model)"
 else
@@ -172,7 +173,7 @@ else
 fi
 
 # initd
-if [[ -f /sbin/init ]]; then
+if [[ -x /sbin/init ]]; then
 	init="$(readlink /sbin/init | sed "s/\/bin\///" | sed "s/\/sbin\///" | sed "s/\/usr//" | sed "s/\/lib//" | sed "s/\-init//" | sed "s/\/systemd\///")"
 		if [[ "$init" == "" ]]; then
 			init=initd
@@ -189,6 +190,11 @@ cpu="$(awk -F '\\s*: | @' \
                             cpu=$2; if ($1 == "Hardware") exit } END { print cpu }' /proc/cpuinfo)"	# part from neofetch
 if [[ "$cpu" == "" ]]; then
 	cpu=Unknown
+fi
+
+if echo $NAME | grep -q 'Android' && [[ "$cpu" == "Unknown" ]]; then
+	cpu=$(getprop ro.soc.manufacturer)
+	cpu+=" $(getprop ro.soc.model)"
 fi
 
 # shell
