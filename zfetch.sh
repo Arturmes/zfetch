@@ -22,7 +22,7 @@
 # variables used: $NAME
 # we do a check to see if $NAME is already set, if not, we try to detect OS
 # ourselves
-if [[ -f /etc/prop.default ]] && [[ -f /bin/getprop ]]; then
+if [[ -f /etc/prop.default ]] && command -v getprop >/dev/null 2>&1; then
 	NAME="Android $(getprop ro.build.version.release)"
 elif [[ -f /etc/os-release ]]; then
 	. /etc/os-release
@@ -34,7 +34,7 @@ fi
 nc="\033[0m"
 
 # logos
-if echo $NAME | grep -q 'Arch'; then
+if echo "$NAME" | grep -q 'Arch'; then
 	dscolor="\033[0;36m" # cyan
 	dslogo1="        /\         "
 	dslogo2="       /  \        "
@@ -43,7 +43,7 @@ if echo $NAME | grep -q 'Arch'; then
 	dslogo5="    / ,'  ', \     "
 	dslogo6="   /.'      '.\    "
 	dslogo7="                   "
-elif echo $NAME | grep -q 'Artix'; then
+elif echo "$NAME" | grep -q 'Artix'; then
 	dscolor="\033[0;36m" # cyan
 	dslogo1="        /\         "
 	dslogo2="       /, \        "
@@ -52,7 +52,7 @@ elif echo $NAME | grep -q 'Artix'; then
 	dslogo5="    / ,'  ', \     "
 	dslogo6="   /.'      '.\    "
 	dslogo7="                   "
-elif echo $NAME | grep -q 'Manjaro'; then
+elif echo "$NAME" | grep -q 'Manjaro'; then
 	dscolor="\033[0;32m" # green
 	dslogo1="  ||||||||| ||||   "
 	dslogo2="  ||||||||| ||||   "
@@ -61,7 +61,7 @@ elif echo $NAME | grep -q 'Manjaro'; then
 	dslogo5="  |||| |||| ||||   "
 	dslogo6="  |||| |||| ||||   "
 	dslogo7="                   "
-elif echo $NAME | grep -q 'Raspbian'; then
+elif echo "$NAME" | grep -q 'Raspbian'; then
 	dscolor="\033[0;31m" # red
 	dslogo1="    __  __    "
 	dslogo2="   (_\\)(/_)   "
@@ -70,7 +70,7 @@ elif echo $NAME | grep -q 'Raspbian'; then
 	dslogo5="   (_(__)_)   "
 	dslogo6="     (__)     "
 	dslogo7="              "
-elif echo $NAME | grep -q 'Debian'; then
+elif echo "$NAME" | grep -q 'Debian'; then
 	dscolor="\033[0;31m" # red
 	dslogo1="    _____      "
 	dslogo2="   /  __ \\     "
@@ -79,7 +79,7 @@ elif echo $NAME | grep -q 'Debian'; then
 	dslogo5="   -_          "
 	dslogo6="    --_        "
 	dslogo7="               "
-elif echo $NAME | grep -q 'Gentoo'; then
+elif echo "$NAME" | grep -q 'Gentoo'; then
 	dscolor="\033[0;35m" # purple
 	dslogo1="         "
 	dslogo2="   ---   "
@@ -88,7 +88,7 @@ elif echo $NAME | grep -q 'Gentoo'; then
 	dslogo5="         "
 	dslogo6="         "
 	dslogo7=$dslogo6
-elif echo $NAME | grep -q 'SUSE'; then
+elif echo "$NAME" | grep -q 'SUSE'; then
 	dscolor="\033[0;32m" # green
 	dslogo1="          "
 	dslogo2="    __    "
@@ -97,7 +97,7 @@ elif echo $NAME | grep -q 'SUSE'; then
 	dslogo5="          "
 	dslogo6="          "
 	dslogo7=$dslogo6
-elif echo $NAME | grep -q 'Fedora'; then
+elif echo "$NAME" | grep -q 'Fedora'; then
 	dscolor="\033[0;34m" # blue
 	dslogo1="          "
 	dslogo2="   /'')   "
@@ -106,7 +106,7 @@ elif echo $NAME | grep -q 'Fedora'; then
 	dslogo5=" (__/     "
 	dslogo6="          "
 	dslogo7=$dslogo6
-elif echo $NAME | grep -q 'Mint'; then
+elif echo "$NAME" | grep -q 'Mint'; then
 	dscolor="\033[0;32m" # blue
 	dslogo1="          "
 	dslogo2=" || -.-   "
@@ -115,7 +115,7 @@ elif echo $NAME | grep -q 'Mint'; then
 	dslogo5="          "
 	dslogo6="          "
 	dslogo7=$dslogo6
-elif echo $NAME | grep -q 'Android'; then
+elif echo "$NAME" | grep -q 'Android'; then
 	dscolor="\033[0;32m" # green
 	dslogo1="    ;,           ,;    "
 	dslogo2="     ';,.-----.,;'     "
@@ -136,15 +136,15 @@ else
 fi
 
 # package manager
-if echo $NAME | grep -q 'Android' && [[ -f /bin/cmd ]]; then
+if echo "$NAME" | grep -q 'Android' && command -v cmd >/dev/null 2>&1; then
 	pm="$(cmd package list packages 2>/dev/null | wc -l) (apk)"
-elif [[ -f /bin/ebuild ]]; then
+elif command -v ebuild >/dev/null 2>&1; then
 	pm="$(ls /var/db/pkg/*/*/BUILD_TIME 2>/dev/null | wc -l) (portage)"
-elif [[ -f /bin/pacman ]]; then
+elif command -v pacman >/dev/null 2>&1; then
 	pm="$(pacman -Qq 2>/dev/null | wc -l) (pacman)"
-elif [[ -f /bin/rpm ]]; then
+elif command -v rpm >/dev/null 2>&1; then
 	pm="$(rpm -qa 2>/dev/null | wc -l) (rpm)"
-elif [[ -f /bin/dpkg ]]; then
+elif command -v dpkg >/dev/null 2>&1; then
 	pm="$(apt list --installed 2>/dev/null | wc -l) (dpkg)"
 else
 	pm=Unknown
@@ -161,11 +161,9 @@ fi
 
 # board
 if [[ -d /sys/class/dmi/id ]]; then
-	hostv="$(cat /sys/class/dmi/id/product_name)"
-	hostv+=" $(cat /sys/class/dmi/id/board_name)"
-elif echo $NAME | grep -q 'Android'; then
-	hostv=$(getprop ro.product.brand)
-	hostv+=" $(getprop ro.product.model)"
+	hostv="$(cat /sys/class/dmi/id/product_name) $(cat /sys/class/dmi/id/board_name)"
+elif echo "$NAME" | grep -q 'Android'; then
+	hostv="$(getprop ro.product.brand) $(getprop ro.product.model)"
 elif [[ -f /sys/firmware/devicetree/base/model ]]; then
 	hostv="$(cat /sys/firmware/devicetree/base/model)"
 else
@@ -178,7 +176,7 @@ if [[ -x /sbin/init ]]; then
 		if [[ "$init" == "" ]]; then
 			init=initd
 		fi
-elif echo $NAME | grep -q 'Android'; then
+elif echo "$NAME" | grep -q 'Android'; then
 	init=init.rc
 else
 	init=Unknown
@@ -192,13 +190,12 @@ if [[ "$cpu" == "" ]]; then
 	cpu=Unknown
 fi
 
-if echo $NAME | grep -q 'Android' && [[ "$cpu" == "Unknown" ]]; then
-	cpu=$(getprop ro.soc.manufacturer)
-	cpu+=" $(getprop ro.soc.model)"
+if echo "$NAME" | grep -q 'Android' && [[ "$cpu" == "Unknown" ]]; then
+	cpu="$(getprop ro.soc.manufacturer) $(getprop ro.soc.model)"
 fi
 
 # shell
-if [[ -f /bin/basename ]]; then
+if command -v basename >/dev/null 2>&1; then
 	shell=$(basename "$SHELL")
 else
 	shell="$(echo "$SHELL" | sed "s/\/bin\///" | sed "s/\/sbin\///" | sed "s/\/usr//" | sed "s/\/system//")"
