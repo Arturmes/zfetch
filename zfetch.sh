@@ -18,11 +18,12 @@
 
 # shellcheck source=/dev/null
 # shellcheck disable=SC2059
+# shellcheck disable=SC3010
 
 # variables used: $NAME
 # we do a check to see if $NAME is already set, if not, we try to detect OS
 # ourselves
-if [[ -f /etc/prop.default ]] && command -v getprop >/dev/null 2>&1; then
+if [[ -f /etc/preloaded-classes ]] && command -v getprop >/dev/null 2>&1; then
 	NAME="Android $(getprop ro.build.version.release)"
 elif [[ -f /etc/os-release ]]; then
 	. /etc/os-release
@@ -139,7 +140,7 @@ fi
 if echo "$NAME" | grep -q 'Android' && command -v cmd >/dev/null 2>&1; then
 	pm="$(cmd package list packages 2>/dev/null | wc -l) (apk)"
 elif command -v ebuild >/dev/null 2>&1; then
-	pm="$(ls /var/db/pkg/*/*/BUILD_TIME 2>/dev/null | wc -l) (portage)"
+	pm="$(find /var/db/pkg/*/*/ -name BUILD_TIME 2>/dev/null | wc -l) (portage)"
 elif command -v pacman >/dev/null 2>&1; then
 	pm="$(pacman -Qq 2>/dev/null | wc -l) (pacman)"
 elif command -v rpm >/dev/null 2>&1; then
@@ -165,14 +166,14 @@ if [[ -d /sys/class/dmi/id ]]; then
 elif echo "$NAME" | grep -q 'Android'; then
 	hostv="$(getprop ro.product.brand) $(getprop ro.product.model)"
 elif [[ -f /sys/firmware/devicetree/base/model ]]; then
-	hostv="$(cat /sys/firmware/devicetree/base/model)"
+	hostv="$(cat < /sys/firmware/devicetree/base/model | tr -d '\0')"
 else
 	hostv=Unknown
 fi
 
 # initd
 if [[ -x /sbin/init ]]; then
-	init="$(readlink /sbin/init | sed "s/\/bin\///" | sed "s/\/sbin\///" | sed "s/\/usr//" | sed "s/\/lib//" | sed "s/\-init//" | sed "s/\/systemd\///")"
+	init="$(readlink /sbin/init | sed "s/\/bin\///" | sed "s/\/sbin\///" | sed "s/\/usr//" | sed "s/\/lib//" | sed "s/\-init//" | sed "s/\/systemd\///" | sed "s/\..//")"
 		if [[ "$init" == "" ]]; then
 			init=initd
 		fi
@@ -211,7 +212,7 @@ fi
 if [[ -f /proc/$PPID/status ]]; then
 	termp="$(grep PPid /proc/$PPID/status | sed "s/PPid:	//")"
 		if [[ -d "/proc/$termp" ]]; then
-			terma="$(cat /proc/$termp/comm)"
+			terma="$(cat /proc/"$termp"/comm)"
 		fi
 else
 	terma=$termv
