@@ -64,13 +64,13 @@ elif echo "$NAME" | grep -q 'Manjaro'; then
 	dslogo7="                   "
 elif echo "$NAME" | grep -q 'Raspbian'; then
 	dscolor="\033[0;31m" # red
-	dslogo1="    __  __    "
-	dslogo2="   (_\\)(/_)   "
-	dslogo3="   (_(__)_)   "
-	dslogo4="  (_(_)(_)_)  "
-	dslogo5="   (_(__)_)   "
-	dslogo6="     (__)     "
-	dslogo7="              "
+	dslogo1="     __  __     "
+	dslogo2="    (_\\)(/_)    "
+	dslogo3="    (_(__)_)    "
+	dslogo4="   (_(_)(_)_)   "
+	dslogo5="    (_(__)_)    "
+	dslogo6="      (__)      "
+	dslogo7="                "
 elif echo "$NAME" | grep -q 'Debian'; then
 	dscolor="\033[0;31m" # red
 	dslogo1="    _____      "
@@ -152,9 +152,9 @@ else
 fi
 
 # disk model
-if [[ -f /sys/block/sda/device/model ]]; then
+if [[ -r /sys/block/sda/device/model ]]; then
 	diskc="$(cat /sys/block/sda/device/model)"
-elif [[ -f /sys/block/mmcblk0/device/name ]]; then
+elif [[ -r /sys/block/mmcblk0/device/name ]]; then
 	diskc="$(cat /sys/block/mmcblk0/device/name)"
 else
 	diskc=Unknown
@@ -165,14 +165,14 @@ if [[ -d /sys/class/dmi/id ]]; then
 	hostv="$(cat /sys/class/dmi/id/product_name) $(cat /sys/class/dmi/id/board_name)"
 elif echo "$NAME" | grep -q 'Android'; then
 	hostv="$(getprop ro.product.brand) $(getprop ro.product.model)"
-elif [[ -f /sys/firmware/devicetree/base/model ]]; then
+elif [[ -r /sys/firmware/devicetree/base/model ]]; then
 	hostv="$(cat < /sys/firmware/devicetree/base/model | tr -d '\0')"
 else
 	hostv=Unknown
 fi
 
 # initd
-if [[ -x /sbin/init ]]; then
+if [[ -L /sbin/init ]]; then
 	init="$(readlink /sbin/init | sed "s/\/bin\///" | sed "s/\/sbin\///" | sed "s/\/usr//" | sed "s/\/lib//" | sed "s/\-init//" | sed "s/\/systemd\///" | sed "s/\..//")"
 		if [[ "$init" == "" ]]; then
 			init=initd
@@ -186,13 +186,25 @@ fi
 # cpu
 cpu="$(awk -F '\\s*: | @' \
                             '/model name|Hardware|Processor|^cpu model|chip type|^cpu type/ {
-                            cpu=$2; if ($1 == "Hardware") exit } END { print cpu }' /proc/cpuinfo)"	# part from neofetch
-if [[ "$cpu" == "" ]]; then
-	cpu=Unknown
+                            cpu=$2; if ($1 == "Hardware") exit } END { print cpu }' /proc/cpuinfo 2>/dev/null)"	# part from neofetch
+
+if [[ "$cpu" == "" ]] || [[ -z "$cpu" ]]; then
+	if echo "$NAME" | grep -q 'Android'; then
+		cpu="$(getprop ro.soc.manufacturer) $(getprop ro.soc.model)"
+	elif command -v lscpu >/dev/null 2>&1; then
+		cpu="$(LC_ALL=C lscpu | awk -F ':' '/Model name/{print $2}' | sed "s/^[ \t]*//")"
+	else
+		cpu=Unknown
+	fi
 fi
 
-if echo "$NAME" | grep -q 'Android' && [[ "$cpu" == "Unknown" ]]; then
-	cpu="$(getprop ro.soc.manufacturer) $(getprop ro.soc.model)"
+# ram
+if command -v free >/dev/null 2>&1; then
+	memory=$(free -h | awk '/^Mem:/ {print $3 "/" $2}')
+elif [[ -r /proc/meminfo ]]; then
+	memory="$(awk '/MemTotal/ {total=$2} /MemAvailable/ {available=$2} END {used=total-available; printf "%.1f MiB / %.1f MiB", used/1024, total/1024}' /proc/meminfo)"
+else
+	memory=Unknown
 fi
 
 # shell
@@ -203,7 +215,7 @@ else
 fi
 
 # virtual terminal
-if [[ -e /proc/$$/fd/2 ]]; then
+if [[ -L /proc/$$/fd/2 ]]; then
 	termv="$(readlink /proc/$$/fd/2 | sed "s/\/dev//" | sed "s/\///" | sed "s/\///")"
 else
 	termv=Unknown
@@ -212,17 +224,11 @@ fi
 if [[ -f /proc/$PPID/status ]]; then
 	termp="$(grep PPid /proc/$PPID/status | sed "s/PPid:	//")"
 		if [[ -d "/proc/$termp" ]]; then
-			terma="$(cat /proc/"$termp"/comm)"
+			terma="$(cat < /proc/"$termp"/comm | tr -d '\0')"
+		else
+			terma=$termv
 		fi
-else
-	terma=$termv
-fi
-
-if [[ "$terma" == "" ]]; then
-	terma=$termv
-elif [[ "$terma" == "init" ]]; then
-	terma=$termv
-elif [[ "$terma" == "login" ]]; then
+elif [[ -z "$terma" ]] || [[ "$terma" == "" ]]; then
 	terma=$termv
 fi
 
@@ -238,8 +244,9 @@ printf "${dscolor}${dslogo1}Kernel  ${nc} $kernel\n"
 printf "${dscolor}${dslogo2}Cpu     ${nc} $cpu\n"
 printf "${dscolor}${dslogo3}Host    ${nc} $hostv\n"
 printf "${dscolor}${dslogo4}Init    ${nc} $init\n"
-printf "${dscolor}${dslogo5}Uptime  ${nc} $uptime\n"
-printf "${dscolor}${dslogo6}Shell   ${nc} $shell\n"
+printf "${dscolor}${dslogo5}Memory  ${nc} $memory\n"
+printf "${dscolor}${dslogo6}Uptime  ${nc} $uptime\n"
+printf "${dscolor}${dslogo7}Shell   ${nc} $shell\n"
 if [ "$pm" != "Unknown" ]; then
 	printf "${dscolor}${dslogo7}Pkgs    ${nc} $pm\n"
 fi
